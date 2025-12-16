@@ -1,0 +1,9 @@
+Booking Helper Production
+script 120jyEh9mxHaESQxoW1nzWZCjWTnesgmSEc1knIBum1-kqXE4Mp5qkfYZ
+linked to sheet
+https://docs.google.com/spreadsheets/d/1OFaiqRb87tvlp3kCiPNqOlNCz2Z86KwMWKdJD-zxGFw
+
+Booking Helper Playground
+script 18CEXDSxrjqbOi90HF1I6IlI_dOFccw3m67roAx1Uns-_lB20y-CPRMNm
+linked to sheet
+https://docs.google.com/spreadsheets/d/1Vzw2O21MH2VLBefoVzD2CJ940nu05iUlQ2S5MPn0J-M

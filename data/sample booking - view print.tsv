@@ -1,0 +1,5 @@
+Course Start	Day	Customer Name	Number of Persons	Number of Days	Activity	Age Group	Lesson Type	Course Time Start	Payment	Management Note	Customer Note	Booking ID
+2025-12-05	Fri	Jiří Hylmar	4	3	skis	children	group				no discount	ed8ab96c-1e3c-429c-8c16-5fde14e2a15c
+2025-12-05	Fri	Jiří Hylmar	1	0.5	skis	children	group				zero discount with voucher	059e6132-e7a3-438d-9dac-5c5dfc2e1fba
+2025-12-05	Fri	Jiří Hylmar	1	0.5	skis	children	group				zero discount with voucher voucher applied in the same same date is not valid	2548152d-6754-4b79-ad01-b7a153bacec1
+2025-12-05	Fri	Jiří Hylmar	1	1	skis	children	private				today offer from admin	2b93d091-c307-47cf-aa89-ed8365e1de44

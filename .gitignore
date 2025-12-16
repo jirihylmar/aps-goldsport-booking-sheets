@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Clasp temporary files (generated from config/)
+.clasp.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

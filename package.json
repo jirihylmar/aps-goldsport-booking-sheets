@@ -1,0 +1,27 @@
+{
+  "name": "aps-goldsport-booking-sheets",
+  "version": "1.0.0",
+  "description": "Google Apps Script for Goldsport booking management",
+  "scripts": {
+    "deploy:playground": "./scripts/deploy-playground.sh",
+    "deploy:production": "./scripts/deploy-production.sh",
+    "open:playground": "./scripts/open-playground.sh",
+    "open:production": "./scripts/open-production.sh",
+    "push:playground": "cp config/.clasp.playground.json .clasp.json && clasp push",
+    "push:production": "cp config/.clasp.production.json .clasp.json && clasp push",
+    "pull:playground": "cp config/.clasp.playground.json .clasp.json && clasp pull",
+    "pull:production": "cp config/.clasp.production.json .clasp.json && clasp pull",
+    "login": "clasp login"
+  },
+  "keywords": [
+    "google-apps-script",
+    "google-sheets",
+    "booking",
+    "goldsport"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}
