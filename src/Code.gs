@@ -94,9 +94,15 @@ function sortBookingData() {
     const lessonTypeIdx = findColumnIndexZeroBased(headers, 'Lesson Type');
     const bookingTypeIdx = findColumnIndexZeroBased(headers, 'Booking Type');
     const confirmedIdx = findColumnIndexZeroBased(headers, 'CONFIRMED');
+    const reservationCreatedIdx = findColumnIndexZeroBased(headers, 'Reservation Created At');
 
     if (courseStartIdx === -1 || lessonTypeIdx === -1) {
       SpreadsheetApp.getUi().alert('Required columns not found: Course Start and Lesson Type');
+      return;
+    }
+
+    if (reservationCreatedIdx === -1) {
+      SpreadsheetApp.getUi().alert('Required column not found: Reservation Created At');
       return;
     }
 
@@ -105,17 +111,26 @@ function sortBookingData() {
     const data = dataRange.getValues();
 
     // Custom sort:
-    // Priority 1 (top): Normal rows - sorted by Course Start desc, Lesson Type asc
-    // Priority 2 (bottom): CONFIRMED="no" OR Booking Type starts with "office-replaced"
+    // Priority 1 (top): Unconfirmed rows (CONFIRMED is empty/blank AND Booking Type does NOT contain "-replaced")
+    //                   - sorted by Reservation Created At descending (newest first)
+    // Priority 2 (bottom): All other rows (confirmed OR replaced)
+    //                      - sorted by Course Start desc, Lesson Type asc
     data.sort(function(a, b) {
-      const aIsLowPriority = isLowPriority(a, bookingTypeIdx, confirmedIdx);
-      const bIsLowPriority = isLowPriority(b, bookingTypeIdx, confirmedIdx);
+      const aIsUnconfirmed = isUnconfirmed(a, bookingTypeIdx, confirmedIdx);
+      const bIsUnconfirmed = isUnconfirmed(b, bookingTypeIdx, confirmedIdx);
 
-      // Low priority rows go to bottom
-      if (aIsLowPriority && !bIsLowPriority) return 1;
-      if (!aIsLowPriority && bIsLowPriority) return -1;
+      // Unconfirmed rows go to TOP
+      if (aIsUnconfirmed && !bIsUnconfirmed) return -1;
+      if (!aIsUnconfirmed && bIsUnconfirmed) return 1;
 
-      // Within same priority: sort by Course Start descending
+      // Both unconfirmed: sort by Reservation Created At descending (newest first)
+      if (aIsUnconfirmed && bIsUnconfirmed) {
+        const dateA = new Date(a[reservationCreatedIdx]);
+        const dateB = new Date(b[reservationCreatedIdx]);
+        return dateB - dateA; // descending (newest first)
+      }
+
+      // Both confirmed/other: sort by Course Start descending
       const dateA = new Date(a[courseStartIdx]);
       const dateB = new Date(b[courseStartIdx]);
       if (dateB - dateA !== 0) return dateB - dateA;
@@ -136,20 +151,26 @@ function sortBookingData() {
 }
 
 /**
- * Check if row should be sorted to bottom (low priority)
- * - CONFIRMED is "no"
- * - Booking Type contains "-replaced" (office-replaced-*, customer-replaced-*)
+ * Check if row is unconfirmed (should be sorted to TOP)
+ * - CONFIRMED is empty (blank field means unconfirmed)
+ * - AND Booking Type does NOT contain "-replaced"
  */
-function isLowPriority(row, bookingTypeIdx, confirmedIdx) {
+function isUnconfirmed(row, bookingTypeIdx, confirmedIdx) {
+  // First check if CONFIRMED is empty
   if (confirmedIdx !== -1) {
-    const confirmed = String(row[confirmedIdx] || '').toLowerCase().trim();
-    if (confirmed === 'no') return true;
+    const confirmed = String(row[confirmedIdx] || '').trim();
+    if (confirmed !== '') return false; // Not empty = confirmed, goes to bottom
+  } else {
+    return false; // No CONFIRMED column = treat as confirmed
   }
+  
+  // Then check Booking Type - if contains "-replaced", goes to bottom
   if (bookingTypeIdx !== -1) {
     const bookingType = String(row[bookingTypeIdx] || '').toLowerCase().trim();
-    if (bookingType.indexOf('-replaced') !== -1) return true;
+    if (bookingType.indexOf('-replaced') !== -1) return false; // replaced goes to bottom
   }
-  return false;
+  
+  return true; // Empty CONFIRMED and NOT replaced = unconfirmed, goes to TOP
 }
 
 /**
@@ -171,7 +192,11 @@ function findColumnIndexZeroBased(headers, columnName) {
  *
  * Columns exported (in order):
  * Course Start, Customer Name, Number of Persons, Activity, Lesson Type,
- * Age Group, Number of Days, Customer Note, Management Note, Booking ID
+ * Age Group, Number of Days, Total % Discount, Total Price, Customer Note, 
+ * Management Note, Booking ID
+ *
+ * Total % Discount = Sum of: OnLine Discount, Seasonal Discount, 
+ * Special Discount, Voucher Discount
  *
  * Excluded columns (commented out): Day, Course Time Start, Payment
  */
@@ -200,6 +225,8 @@ function viewPrint() {
       'Lesson Type',
       'Age Group',
       'Number of Days',
+      'Total % Discount',
+      'Total Price',
       'Customer Note',
       'Management Note',
       'Booking ID'
@@ -227,11 +254,27 @@ function viewPrint() {
     // Validate required columns (Management Note is optional)
     const required = ['Booking ID', 'Course Start', 'Customer Name', 'Number of Persons',
                       'Number of Days', 'Activity', 'Age Group', 'Lesson Type', 'CONFIRMED',
-                      'Customer Note'];
+                      'Customer Note', 'Total Price'];
     for (const col of required) {
       if (colIdx[col] === undefined) {
         SpreadsheetApp.getUi().alert('Missing column: ' + col);
         return;
+      }
+    }
+    
+    // Optional discount columns (for Total % Discount calculation)
+    const discountCols = ['OnLine Discount', 'Seasonal Discount', 'Special Discount', 'Voucher Discount'];
+    
+    // Build case-insensitive column lookup for discounts
+    const discountColIndices = {};
+    for (const discountCol of discountCols) {
+      const normalizedName = discountCol.toLowerCase().trim();
+      for (let i = 0; i < headers.length; i++) {
+        const headerName = String(headers[i]).toLowerCase().trim();
+        if (headerName === normalizedName) {
+          discountColIndices[discountCol] = i;
+          break;
+        }
       }
     }
 
@@ -325,7 +368,16 @@ function viewPrint() {
 
       outputDates.push(courseStartDate.getTime()); // For sorting
 
-      // Build output row - new column order, Management Note from source (if exists)
+      // Calculate Total % Discount from discount columns
+      let totalDiscount = 0;
+      for (const discountCol of discountCols) {
+        if (discountColIndices[discountCol] !== undefined) {
+          const discountValue = parseFloat(row[discountColIndices[discountCol]]) || 0;
+          totalDiscount += discountValue;
+        }
+      }
+
+      // Build output row - new column order with Total % Discount and Total Price
       outputData.push([
         formatDateDM(courseStartDate),            // Course Start
         row[colIdx['Customer Name']] || '',       // Customer Name
@@ -334,6 +386,8 @@ function viewPrint() {
         row[colIdx['Lesson Type']] || '',         // Lesson Type
         row[colIdx['Age Group']] || '',           // Age Group
         row[colIdx['Number of Days']] || '',      // Number of Days
+        totalDiscount,                            // Total % Discount (calculated)
+        row[colIdx['Total Price']] || '',         // Total Price
         row[colIdx['Customer Note']] || '',       // Customer Note
         colIdx['MANAGEMENT NOTE'] !== undefined ? (row[colIdx['MANAGEMENT NOTE']] || '') : '',  // MANAGEMENT NOTE (optional)
         bookingId                                 // Booking ID
