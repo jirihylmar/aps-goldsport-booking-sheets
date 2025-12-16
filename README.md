@@ -10,8 +10,7 @@ Google Apps Script for managing Goldsport ski resort bookings in Google Sheets.
 │   └── appsscript.json      # Apps Script manifest
 ├── config/
 │   ├── .clasp.playground.json   # Playground environment config
-│   ├── .clasp.production.json   # Production environment config
-│   └── service-account-key.json # Service account credentials
+│   └── .clasp.production.json   # Production environment config
 ├── scripts/
 │   ├── deploy-playground.sh     # Deploy to playground
 │   ├── deploy-production.sh     # Deploy to production (with confirmation)
@@ -36,13 +35,25 @@ Google Apps Script for managing Goldsport ski resort bookings in Google Sheets.
 
 1. Install Node.js (v14+)
 2. Install clasp globally: `npm install -g @google/clasp`
-3. Login to Google: `npm run login` or `clasp login`
+3. **Authenticate with Google:** `npm run login` or `clasp login`
+   - This creates OAuth credentials in `~/.clasprc.json` (not in this repo)
+   - You only need to do this once per machine
+   - Credentials are stored securely in your home directory
 
 ### Install Dependencies
 
 ```bash
 npm install
 ```
+
+## Authentication & Security
+
+**CLASP uses OAuth authentication** - no service account keys needed!
+
+- Run `clasp login` once to authenticate
+- Credentials are stored in `~/.clasprc.json` in your home directory
+- This file is **automatically ignored** and never committed to git
+- Each developer authenticates individually with their Google account
 
 ## Deployment Workflow
 

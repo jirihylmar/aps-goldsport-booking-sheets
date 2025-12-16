@@ -13,3 +13,12 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Credentials and sensitive files
+config/service-account-key.json
+*.key.json
+.env
+.env.local
+
+# CLASP OAuth credentials (stored in user home directory)
+.clasprc.json
